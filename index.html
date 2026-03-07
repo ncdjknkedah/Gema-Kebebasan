@@ -170,10 +170,8 @@
                     <span>📞</span> Hubungi Sekarang
                 </a>
                 <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 10px; line-height: 1.2;">Talian Bantuan Sokongan Psikososial (KKM)</p>
-                <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 10px; line-height: 1.2;">atau dapatkan bantuan profesional di mana-mana <strong>Klinik Kesihatan</strong> atau <strong>Hospital</strong> berhampiran anda.</strong></p>
-                <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 10px; line-height: 1.2;"><strong>#KesihatanMentalMilikSemua</strong></p>
-                <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 10px; line-height: 1.2;"><strong>#HentikanStigmaKesihatanMental</strong></p>
             </div>
+
             <button class="btn btn-grey" style="margin-top: 25px;" onclick="playTreet(); location.reload()">Mula Sesi Baru</button>
         </div>
     </div>
@@ -280,14 +278,30 @@
     function updateVisuals() {
         if(!screamActive) return;
         analyser.getByteFrequencyData(dataArray);
+        
+        // Mendapatkan purata kekuatan frekuensi
         let volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        let volPercent = Math.min(99.9, (volume / 92) * 100);
+        
+        // --- SCALE PENGIRAAN BARU ---
+        // k adalah kadar kesukaran (sensitivity). 
+        // Nilai 0.032 dilaras supaya volume ~92 akan menghasilkan kira-kira ~94%.
+        // Semakin kuat bunyi, semakin sukar untuk nilainya terus meningkat.
+        let k = 0.032; 
+        
+        // Formula Asimptotik (logaritmik terbalik): 100 * (1 - e^(-k * volume))
+        let calculatedPercent = 100 * (1 - Math.exp(-k * volume));
+        
+        // Memastikan nilai paling maksimum yang boleh dicapai ialah 99.8% sahaja
+        let volPercent = Math.min(99.8, calculatedPercent);
+
         document.getElementById('volumeBar').style.height = volPercent + "%";
+        
         if(volPercent > globalMaxPeak) {
             globalMaxPeak = volPercent;
             document.getElementById('peakIndicator').style.bottom = globalMaxPeak + "%";
             document.getElementById('peakValue').innerText = globalMaxPeak.toFixed(1) + "%";
         }
+        
         requestAnimationFrame(updateVisuals);
     }
 
@@ -308,7 +322,4 @@
 </script>
 
 </body>
-
 </html>
-
-
