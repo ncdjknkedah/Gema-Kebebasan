@@ -194,6 +194,7 @@
     let timeLeft = 0;
     let screamActive = false;
 
+    // Bunyi 3, 2, 1 (Kiraan detik)
     function playBeep() {
         initAudioContext();
         const osc = audioCtx.createOscillator();
@@ -207,6 +208,7 @@
         osc.stop(audioCtx.currentTime + 0.1);
     }
 
+    // Bunyi butang navigasi
     function playTreet() {
         initAudioContext();
         const osc = audioCtx.createOscillator();
@@ -220,6 +222,26 @@
         gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    // --- BUNYI LOCENG MULA DIMASUKKAN DI SINI ---
+    function playStartBell() {
+        initAudioContext();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'sine'; // Nada loceng tulen
+        osc.frequency.setValueAtTime(1200, audioCtx.currentTime); // Frekuensi tinggi loceng mula
+        
+        // Cepat naik kekuatan bunyi dan perlahan-lahan lenyap
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+        
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.8);
     }
 
     function initAudioContext() {
@@ -263,7 +285,10 @@
         let intv = setInterval(() => {
             c--;
             if(c > 0) { disp.innerText = c; playBeep(); }
-            else if(c === 0) { disp.innerText = "JERIT!"; playTreet(); }
+            
+            // --- KOD DIKEMAS KINI DI BAWAH INI (Guna LOCENG MULA apabila JERIT!) ---
+            else if(c === 0) { disp.innerText = "JERIT!"; playStartBell(); }
+            
             else { clearInterval(intv); startScreamingSession(); }
         }, 1000);
     }
