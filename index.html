@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gema Kebebasan - JKN Kedah</title>
     <style>
-        /* TUKAR: --secondary ditukar kepada warna Hijau Apple */
         :root { 
             --primary: #ff416c; 
             --secondary: #8ce600; 
@@ -54,7 +53,6 @@
         
         .btn { background: var(--primary); border: none; padding: 16px; border-radius: 30px; color: white; cursor: pointer; font-weight: bold; font-size: 1rem; width: 100%; margin-top: 10px; display: block; text-decoration: none; box-sizing: border-box; text-align: center; }
         
-        /* Nama class kekal btn-blue tapi warnanya kini Hijau Apple */
         .btn-blue { background: var(--secondary); color: black; }
         .btn-grey { background: #444; }
         .btn-call { background: var(--green); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.1rem; width: 100%; margin-top: 15px; }
@@ -104,10 +102,10 @@
         <div class="card">
             <h3 style="color: var(--secondary); text-align: center;">Cara Menggunakan</h3>
             <ol class="instruction-list">
-                <li>Sila tulis apa yang terbuku dalam hati anda atau tulis <strong>"rahsia"</strong> sekiranya anda tidak ingin berkongsi perasaan anda sekarang.</li>
-                <li>Sesi pertama adalah <strong>5 saat</strong>. Masa bertambah jika mengulang sesi.</li>
-                <li>Anda mempunyai <strong>2 kali percubaan</strong> mengulang sebelum tamat.</li>
-                <li>Tahap jeritan tertinggi anda dipaparkan di akhir sesi.</li>
+                <li>Sila tulis apa yang terbuku dalam hati anda atau tulis <strong>"rahsia"</strong> sekiranya anda enggan berkongsi.</li>
+                <li>Setiap sesi jeritan diperuntukkan masa <strong>10 saat</strong>.</li>
+                <li>Anda boleh <strong>mengulang tanpa had</strong> selagi belum berasa puas/lega.</li>
+                <li>Tahap jeritan akan dinilai secara melengkung (eksponen). Berusahalah menjerit lebih kuat pada cubaan seterusnya untuk mengatasi halangan 93%!</li>
             </ol>
             <button class="btn btn-blue" onclick="playTreet(); showPage('pageInput')">Seterusnya</button>
         </div>
@@ -133,7 +131,8 @@
     </div>
 
     <div id="pageScream" class="page">
-        <div id="timerCircle">5.0</div>
+        <!-- Tempoh ditetapkan 10 saat -->
+        <div id="timerCircle">10.0</div>
         <div class="meter-container">
             <div id="peakIndicator">
                 <span id="peakValue">0%</span>
@@ -148,6 +147,7 @@
         <p>Bagaimana perasaan anda?</p>
         <p id="attemptInfo" style="color: #888; font-size: 0.8rem; margin-bottom: 20px;"></p>
         <button class="btn btn-blue" onclick="playTreet(); showFinalResult()">Saya Berasa Lega 😊</button>
+        <!-- Butang ulang tidak akan hilang -->
         <button id="retryBtn" class="btn btn-grey" onclick="playTreet(); retryScreaming()">Masih Tidak Selesa (Ulang)</button>
     </div>
 
@@ -185,9 +185,10 @@
     let audioCtx;
     let analyser, dataArray;
     let globalMaxPeak = 0;
-    let targetSec = 5;
+    
+    // --- DIUBAH: Masa 10 saat dan hapuskan limit percubaan ---
+    let targetSec = 10;
     let attemptsUsed = 0;
-    const maxAttempts = 2;
     let timeLeft = 0;
     let screamActive = false;
 
@@ -246,13 +247,16 @@
         playBeep();
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            initAudioContext();
-            analyser = audioCtx.createAnalyser();
-            const source = audioCtx.createMediaStreamSource(stream);
-            analyser.fftSize = 256;
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            source.connect(analyser);
+            // Elak buka stream mikrofon bertindih sekiranya pengguna ulang banyak kali
+            if(!analyser) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                initAudioContext();
+                analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                source.connect(analyser);
+            }
         } catch(e) { return alert("Mikrofon diperlukan."); }
 
         let intv = setInterval(() => {
@@ -279,19 +283,17 @@
         if(!screamActive) return;
         analyser.getByteFrequencyData(dataArray);
         
-        // Mendapatkan purata kekuatan frekuensi
         let volume = dataArray.reduce((a, b) => a + b) / dataArray.length;
         
-        // --- SCALE PENGIRAAN BARU ---
-        // k adalah kadar kesukaran (sensitivity). 
-        // Nilai 0.032 dilaras supaya volume ~92 akan menghasilkan kira-kira ~94%.
-        // Semakin kuat bunyi, semakin sukar untuk nilainya terus meningkat.
-        let k = 0.032; 
+        // --- DIUBAH: Peningkatan Eksponen yang mencabar ---
+        // k dikurangkan ke 0.027 supaya peak memuncak sekitar ~93%
+        // Untuk mencapai lebih, pengguna perlu menjerit dengan usaha yang menekan gandaan eksponen
+        let k = 0.027; 
         
-        // Formula Asimptotik (logaritmik terbalik): 100 * (1 - e^(-k * volume))
+        // Formula asimptotik yang bertindak sebagai eksponen rintangan
         let calculatedPercent = 100 * (1 - Math.exp(-k * volume));
         
-        // Memastikan nilai paling maksimum yang boleh dicapai ialah 99.8% sahaja
+        // Memastikan kelancaran had atas tidak melepasi 99.8%
         let volPercent = Math.min(99.8, calculatedPercent);
 
         document.getElementById('volumeBar').style.height = volPercent + "%";
@@ -306,13 +308,15 @@
     }
 
     function finishSession() {
-        document.getElementById('attemptInfo').innerText = `Percubaan: ${attemptsUsed + 1}/${maxAttempts + 1}`;
-        if(attemptsUsed >= maxAttempts) document.getElementById('retryBtn').style.display = 'none';
+        // --- DIUBAH: Mengemaskini info tanpa sekatan limit percubaan ---
+        document.getElementById('attemptInfo').innerText = `Jumlah Sesi Dilakukan: ${attemptsUsed + 1}`;
         showPage('pageFeedback');
     }
 
     function retryScreaming() {
-        if(attemptsUsed < maxAttempts) { attemptsUsed++; targetSec += 5; startCountdown(); }
+        attemptsUsed++; 
+        // Dipanggil terus memandangkan had limit telah dibuang
+        startCountdown(); 
     }
 
     function showFinalResult() {
