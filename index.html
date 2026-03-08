@@ -62,23 +62,6 @@
         .quote { font-style: italic; color: var(--gold); text-align: center; line-height: 1.6; margin: 20px 0; font-size: 1.1rem; }
 
         footer { padding: 20px; font-size: 0.7rem; color: #555; text-align: center; width: 100%; border-top: 1px solid #1a1a1a; margin-top: 20px; }
-        
-        /* Tambahan CSS Untuk Kaunter */
-        .counter-box {
-            margin-top: 15px;
-            padding: 10px;
-            background: #1a1a1a;
-            border-radius: 10px;
-            border: 1px solid #333;
-            text-align: center;
-        }
-        .counter-box span {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary);
-            display: block;
-            letter-spacing: 2px;
-        }
     </style>
 </head>
 <body>
@@ -191,13 +174,6 @@
                 <p style="font-size: 0.75rem; opacity: 0.8; margin-top: 10px; line-height: 1.2;"><strong>#KesihatanMentalMilikSemua</strong><br><strong>#HentikanStigmaKesihatanMental</strong></p>
             </div>
 
-            <!-- BAHAGIAN KAUNTER PENGGUNA -->
-            <div class="counter-box">
-                <p style="margin: 0; font-size: 0.8rem; color: #ccc;">Jumlah Pengguna Selesai Terapi:</p>
-                <!-- Kaunter ini menggunakan API fallback berasaskan localStorage jika tiada internet -->
-                <span id="globalVisitorCount">...</span>
-            </div>
-
             <button class="btn btn-grey" style="margin-top: 25px;" onclick="playTreet(); location.reload()">Mula Sesi Baru</button>
         </div>
     </div>
@@ -212,12 +188,11 @@
     let analyser, dataArray;
     let globalMaxPeak = 0;
     
-    // --- DIUBAH: Masa 10 saat dan hapuskan limit percubaan ---
+    // Masa 10 saat dan hapuskan limit percubaan
     let targetSec = 10;
     let attemptsUsed = 0;
     let timeLeft = 0;
     let screamActive = false;
-    let hasCounted = false; // Memastikan pengguna / sesi hanya dikira sekali sahaja
 
     function playBeep() {
         initAudioContext();
@@ -336,37 +311,9 @@
         startCountdown(); 
     }
 
-    // FUNGSI KAUNTER PENGGUNA API
-    async function showFinalResult() {
+    function showFinalResult() {
         document.getElementById('finalPeak').innerText = globalMaxPeak.toFixed(1);
         showPage('pageFinal');
-        
-        // Elak spam API jika pengguna masih berada di page yang sama
-        if (hasCounted) return;
-        hasCounted = true;
-
-        const counterElement = document.getElementById("globalVisitorCount");
-
-        // Kaedah 1: Guna Free API Dev (Public Hit Counter)
-        // Jika API ini tidak dapat diakses, ia akan 'fallback' kepada LocalStorage pengguna sendiri.
-        try {
-            // Namespace URL: 'gemakebebasan' 'jknkedah'
-            const response = await fetch("https://api.counterapi.dev/v1/gemakebebasan_jknkedah/completed_users");
-            const data = await response.json();
-            counterElement.innerText = data.count; // Membaca jumlah terkini dari API
-        } catch (error) {
-            console.warn("Gagal menghubungi API Kaunter. Menggunakan kiraan lokal(offline).");
-            
-            // Kaedah 2: Fallback berasaskan LocalStorage (offline) jika API percuma down
-            let localCount = localStorage.getItem('gemaVisitorCount');
-            if (!localCount) {
-                localCount = 1;
-            } else {
-                localCount = parseInt(localCount) + 1;
-            }
-            localStorage.setItem('gemaVisitorCount', localCount);
-            counterElement.innerText = localCount + " (Sesi Anda)";
-        }
     }
 </script>
 
